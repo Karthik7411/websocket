@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Chat Client</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    .container {
+      width: 90%;
+      max-width: 400px;
+      background: white;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      text-align: center;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    #chatSection { display: none; }
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px;
+      background: #ff5722;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover { background: #e64a19; }
+    #messages {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-top: 10px;
+      max-height: 300px;
+      overflow-y: auto;
+      background: #fff;
+      border-radius: 6px;
+      text-align: left;
+    }
+    #onlineUsers {
+      font-size: 0.9em;
+      color: green;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loginSection">
+      <h2>Enter Your Name</h2>
+      <input type="text" id="usernameInput" placeholder="Your Name">
+      <button onclick="joinChat()">Join Chat</button>
+    </div>
+
+    <div id="chatSection">
+      <h2>WebSocket Chat</h2>
+      <div id="onlineUsers">Online: 0</div>
+      <div id="messages"></div>
+      <div class="input-group">
+        <input type="text" id="messageInput" placeholder="Enter message" onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let ws;
+    let username;
+    let onlineUsers = 0;
+    const WS_URL = "wss://s14220.blr1.piesocket.com/v3/1?api_key=94CbDM9VXD0kqsZdZoXWCM3FMvFkUnaAheb8MHbr&notify_self=1";
+
+    function joinChat() {
+      username = document.getElementById("usernameInput").value.trim();
+      if (username) {
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("chatSection").style.display = "block";
+        connectWebSocket();
+      } else {
+        alert("Please enter your name");
+      }
+    }
+
+    function connectWebSocket() {
+      ws = new WebSocket(WS_URL);
+
+      ws.onopen = () => {
+        console.log("Connected to WebSocket server");
+        ws.send(JSON.stringify({ type: "join", name: username }));
+      };
+
+      ws.onmessage = (event) => {
+        const messagesDiv = document.getElementById("messages");
+        const newMessage = document.createElement("p");
+
+        try {
+          const parsedMessage = JSON.parse(event.data);
+
+          if (parsedMessage.type === "updateUsers") {
+            onlineUsers = parsedMessage.count;
+            document.getElementById("onlineUsers").textContent = `Online: ${onlineUsers}`;
+          } else {
+            newMessage.innerHTML = `<strong>${parsedMessage.name}:</strong> ${parsedMessage.msg || "joined the chat."}`;
+            if (!parsedMessage.msg) newMessage.style.color = "gray";
+          }
+
+          messagesDiv.appendChild(newMessage);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        } catch (error) {
+          console.error("Error parsing message:", error);
+          newMessage.textContent = event.data;
+          messagesDiv.appendChild(newMessage);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        alert("WebSocket connection error. Please try again later.");
+      };
+
+      ws.onclose = () => {
+        console.warn("WebSocket disconnected. Attempting to reconnect...");
+        setTimeout(connectWebSocket, 3000);
+      };
+    }
+
+    function sendMessage() {
+      const messageInput = document.getElementById("messageInput");
+      const message = messageInput.value.trim();
+      if (message) {
+        ws.send(JSON.stringify({ type: "message", name: username, msg: message }));
+        messageInput.value = "";
+      }
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === "Enter") {
+        sendMessage();
+      }
+    }
+  </script>
+</body>
+</html>
