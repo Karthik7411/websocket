@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Professional Customer Support</title>
+  <title>Customer Support</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
@@ -438,7 +438,7 @@
     <!-- Login Section -->
     <div id="loginSection">
       <div class="login-card">
-        <h2>Welcome to Professional Support</h2>
+        <h2>Welcome to Expense manager customer Support</h2>
         <div class="login-input">
           <label for="usernameInput">Your Name</label>
           <input type="text" id="usernameInput" placeholder="Enter your full name" required>
@@ -454,7 +454,7 @@
       <div class="app-header">
         <div class="header-title">
           <i class="fas fa-headset"></i>
-          Professional Support Center
+          Expense manager Support Center
         </div>
         <div class="online-counter">
         EM
@@ -516,7 +516,7 @@
       ws.onopen = () => {
         console.log("Connected to WebSocket server");
         ws.send(JSON.stringify({ type: "join", name: username }));
-        addSystemMessage(`Welcome to Professional Support, ${username}! How can we assist you today?`);
+        addSystemMessage(`Welcome to EM Support, ${username}! How can we assist you today?`);
       };
 
       ws.onmessage = async (event) => {
