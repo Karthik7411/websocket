@@ -825,7 +825,7 @@
           
           // Send join message
           this.sendWebSocketMessage({ type: "join", name: this.username });
-          this.addSystemMessage(`Welcome to ChatConnect Pro, ${this.username}!`);
+          this.addSystemMessage(`Welcome to ChatConnect Pro Please ask Your friend to join the same window, ${this.username}!`);
         };
 
         this.ws.onmessage = async (event) => {
