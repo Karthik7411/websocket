@@ -641,15 +641,28 @@
       pointer-events: none;
     }
   </style>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-KQ8H5G7V4B"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-KQ8H5G7V4B');
-</script>
+  
+  <!-- Google Analytics - Single implementation in head -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KQ8H5G7V4B"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-KQ8H5G7V4B');
+    
+    // Set default consent to denied (GDPR compliant)
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'analytics_storage': 'denied',
+      'personalization_storage': 'denied',
+      'functionality_storage': 'denied'
+    });
+    
+    // You would typically update this after getting user consent
+    // gtag('consent', 'update', {
+    //   'analytics_storage': 'granted'
+    // });
+  </script>
 </head>
 <body>
   <div class="app-container">
@@ -735,13 +748,7 @@
       </div>
     </div>
   </div>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-KQ8H5G7V4B"></script>
-  <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-KQ8H5G7V4B');
-</script>
+
   <script>
     class ChatApp {
       constructor() {
@@ -769,10 +776,11 @@
       loadSavedUsername() {
         this.username = this.getCookie("chatconnect_username");
         if (this.username) {
-           gtag('event', 'Name', {
-      'event_category': 'consent',
-      'event_label': 'cookie_banner'
-    });
+          // Track returning user from cookie
+          gtag('event', 'returning_user', {
+            'event_category': 'engagement',
+            'event_label': 'cookie_storage'
+          });
           document.getElementById("usernameInput").value = this.username;
         }
       }
@@ -795,57 +803,71 @@
         window.addEventListener("offline", () => this.handleOffline());
       }
 
-     handleLogin(event) {
-  event.preventDefault();
-  
-  const usernameInput = document.getElementById("usernameInput");
-  const username = usernameInput.value.trim();
-  
-  if (!username) {
-    this.showError("Please enter a valid display name");
-    return;
-  }
+      handleLogin(event) {
+        event.preventDefault();
+        
+        const usernameInput = document.getElementById("usernameInput");
+        const username = usernameInput.value.trim();
+        
+        if (!username) {
+          this.showError("Please enter a valid display name");
+          // Track empty username attempt
+          gtag('event', 'login_error', {
+            'event_category': 'authentication',
+            'event_label': 'empty_username'
+          });
+          return;
+        }
 
-  // Track login attempt
-  gtag('event', 'login_attempt', {
-    'event_category': 'authentication',
-    'event_label': 'username_login'
-  });
+        // Track login attempt
+        gtag('event', 'login_attempt', {
+          'event_category': 'authentication',
+          'event_label': 'username_login',
+          'username_length': username.length
+        });
 
-  if (username.length < 2) {
-    this.showError("Display name must be at least 2 characters");
-    gtag('event', 'login_validation_failed', {
-      'event_category': 'authentication',
-      'event_label': 'username_too_short'
-    });
-    return;
-  }
+        if (username.length < 2) {
+          this.showError("Display name must be at least 2 characters");
+          gtag('event', 'login_validation_failed', {
+            'event_category': 'authentication',
+            'event_label': 'username_too_short',
+            'username_length': username.length
+          });
+          return;
+        }
 
-  if (username.length > 30) {
-    this.showError("Display name must be less than 30 characters");
-    gtag('event', 'login_validation_failed', {
-      'event_category': 'authentication',
-      'event_label': 'username_too_long'
-    });
-    return;
-  }
+        if (username.length > 30) {
+          this.showError("Display name must be less than 30 characters");
+          gtag('event', 'login_validation_failed', {
+            'event_category': 'authentication',
+            'event_label': 'username_too_long',
+            'username_length': username.length
+          });
+          return;
+        }
 
-  this.username = username;
-  this.setCookie("chatconnect_username", username, 5 / (24 * 60));
-  
-  // Track successful login
-  gtag('event', 'login_success', {
-    'event_category': 'authentication',
-    'event_label': 'username_login'
-  });
+        this.username = username;
+        this.setCookie("chatconnect_username", username, 5 / (24 * 60));
+        
+        // Track successful login
+        gtag('event', 'login_success', {
+          'event_category': 'authentication',
+          'event_label': 'username_login',
+          'username_length': username.length
+        });
 
-  this.showChat();
-  this.connectWebSocket();
-}
+        this.showChat();
+        this.connectWebSocket();
+      }
 
       showChat() {
         document.getElementById("loginSection").style.display = "none";
         document.getElementById("chatSection").style.display = "flex";
+        // Track chat view
+        gtag('event', 'chat_view', {
+          'event_category': 'navigation',
+          'event_label': 'chat_interface'
+        });
       }
 
       connectWebSocket() {
@@ -854,6 +876,11 @@
         }
 
         this.updateConnectionStatus("connecting", "Connecting...");
+        // Track connection attempt
+        gtag('event', 'connection_attempt', {
+          'event_category': 'connection',
+          'event_label': 'websocket'
+        });
         
         this.ws = new WebSocket(this.WS_URL);
         
@@ -862,6 +889,12 @@
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.updateConnectionStatus("connected", "Connected");
+          
+          // Track successful connection
+          gtag('event', 'connection_success', {
+            'event_category': 'connection',
+            'event_label': 'websocket'
+          });
           
           // Send join message
           this.sendWebSocketMessage({ type: "join", name: this.username });
@@ -875,17 +908,36 @@
             this.handleMessage(parsedMessage);
           } catch (error) {
             console.error("Error parsing message:", error);
+            // Track message parsing error
+            gtag('event', 'message_error', {
+              'event_category': 'error',
+              'event_label': 'message_parsing'
+            });
           }
         };
 
         this.ws.onerror = (error) => {
           console.error("WebSocket Error:", error);
+          // Track connection error
+          gtag('event', 'connection_error', {
+            'event_category': 'error',
+            'event_label': 'websocket',
+            'error': error.message || 'Unknown error'
+          });
           this.handleConnectionError();
         };
 
         this.ws.onclose = (event) => {
           this.isConnected = false;
           console.log("WebSocket connection closed:", event.code, event.reason);
+          
+          // Track connection closed
+          gtag('event', 'connection_closed', {
+            'event_category': 'connection',
+            'event_label': 'websocket',
+            'code': event.code,
+            'reason': event.reason || 'Unknown reason'
+          });
           
           if (event.code !== 1000) { // Not a normal closure
             this.handleDisconnection();
@@ -904,6 +956,12 @@
           case "message":
             if (message.msg) {
               this.addChatMessage(message);
+              // Track received message
+              gtag('event', 'message_received', {
+                'event_category': 'messaging',
+                'event_label': 'chat_message',
+                'message_length': message.msg.length
+              });
             }
             break;
           default:
@@ -917,6 +975,13 @@
         this.usersOnline.add(username);
         this.updateUsersList();
         
+        // Track user join
+        gtag('event', 'user_join', {
+          'event_category': 'presence',
+          'event_label': 'user_online',
+          'username': username
+        });
+        
         if (username !== this.username) {
           this.addSystemMessage(`${username} joined the workspace`);
         }
@@ -925,6 +990,14 @@
       handleUserLeave(username) {
         this.usersOnline.delete(username);
         this.updateUsersList();
+        
+        // Track user leave
+        gtag('event', 'user_leave', {
+          'event_category': 'presence',
+          'event_label': 'user_offline',
+          'username': username
+        });
+        
         this.addSystemMessage(`${username} left the workspace`);
       }
 
@@ -938,6 +1011,13 @@
           type: "message",
           name: this.username,
           msg: message
+        });
+        
+        // Track message sent
+        gtag('event', 'message_sent', {
+          'event_category': 'messaging',
+          'event_label': 'chat_message',
+          'message_length': message.length
         });
         
         messageInput.value = "";
@@ -1020,6 +1100,13 @@
         // Update counter
         onlineCount.textContent = `${this.usersOnline.size} online`;
         
+        // Track online users count
+        gtag('event', 'user_count_update', {
+          'event_category': 'presence',
+          'event_label': 'online_users',
+          'count': this.usersOnline.size
+        });
+        
         // Clear and rebuild list
         usersList.innerHTML = "";
         
@@ -1095,6 +1182,14 @@
           this.reconnectAttempts++;
           const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
           
+          // Track reconnection attempt
+          gtag('event', 'reconnection_attempt', {
+            'event_category': 'connection',
+            'event_label': 'websocket',
+            'attempt_number': this.reconnectAttempts,
+            'delay_ms': delay
+          });
+          
           this.addSystemMessage(`Connection lost. Reconnecting in ${delay/1000} seconds... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
           
           setTimeout(() => {
@@ -1103,12 +1198,25 @@
             }
           }, delay);
         } else {
+          // Track reconnection failure
+          gtag('event', 'reconnection_failed', {
+            'event_category': 'connection',
+            'event_label': 'websocket',
+            'attempts': this.reconnectAttempts
+          });
+          
           this.addSystemMessage("Unable to reconnect. Please refresh the page.");
         }
       }
 
       handleOnline() {
         if (!this.isConnected) {
+          // Track network restored
+          gtag('event', 'network_restored', {
+            'event_category': 'connection',
+            'event_label': 'online'
+          });
+          
           this.addSystemMessage("Internet connection restored. Reconnecting...");
           this.connectWebSocket();
         }
