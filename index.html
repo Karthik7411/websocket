@@ -799,32 +799,53 @@
         window.addEventListener("offline", () => this.handleOffline());
       }
 
-      handleLogin(event) {
-        event.preventDefault();
-        
-        const usernameInput = document.getElementById("usernameInput");
-        const username = usernameInput.value.trim();
-        
-        if (!username) {
-          this.showError("Please enter a valid display name");
-          return;
-        }
+     handleLogin(event) {
+  event.preventDefault();
+  
+  const usernameInput = document.getElementById("usernameInput");
+  const username = usernameInput.value.trim();
+  
+  if (!username) {
+    this.showError("Please enter a valid display name");
+    return;
+  }
 
-        if (username.length < 2) {
-          this.showError("Display name must be at least 2 characters");
-          return;
-        }
+  // Track login attempt
+  gtag('event', 'login_attempt', {
+    'event_category': 'authentication',
+    'event_label': 'username_login'
+  });
 
-        if (username.length > 30) {
-          this.showError("Display name must be less than 30 characters");
-          return;
-        }
+  if (username.length < 2) {
+    this.showError("Display name must be at least 2 characters");
+    gtag('event', 'login_validation_failed', {
+      'event_category': 'authentication',
+      'event_label': 'username_too_short'
+    });
+    return;
+  }
 
-        this.username = username;
-       this.setCookie("chatconnect_username", username, 5 / (24 * 60));
-        this.showChat();
-        this.connectWebSocket();
-      }
+  if (username.length > 30) {
+    this.showError("Display name must be less than 30 characters");
+    gtag('event', 'login_validation_failed', {
+      'event_category': 'authentication',
+      'event_label': 'username_too_long'
+    });
+    return;
+  }
+
+  this.username = username;
+  this.setCookie("chatconnect_username", username, 5 / (24 * 60));
+  
+  // Track successful login
+  gtag('event', 'login_success', {
+    'event_category': 'authentication',
+    'event_label': 'username_login'
+  });
+
+  this.showChat();
+  this.connectWebSocket();
+}
 
       showChat() {
         document.getElementById("loginSection").style.display = "none";
